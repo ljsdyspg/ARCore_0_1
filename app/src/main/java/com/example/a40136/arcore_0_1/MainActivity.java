@@ -235,7 +235,7 @@ public class MainActivity extends AppCompatActivity {
         float cameraPricipalPoint_cy = camera.getImageIntrinsics().getPrincipalPoint()[1];
         long cameraTimestamp = frame.getTimestamp();
 
-        final String filename = generateFilenameWithInfo(String.valueOf(cameraTimestamp));
+        final String filename = generateFilenameWithInfo(String.valueOf(count_pic));
 
 
         final Bitmap bitmap = Bitmap.createBitmap(surfaceView.getWidth(), surfaceView.getHeight(), Bitmap.Config.ARGB_8888);
