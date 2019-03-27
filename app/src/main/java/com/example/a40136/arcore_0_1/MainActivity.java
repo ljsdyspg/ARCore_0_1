@@ -10,6 +10,7 @@ import android.os.Build;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.support.annotation.UiThread;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -44,6 +45,8 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = MainActivity.class.getSimpleName();
@@ -57,6 +60,11 @@ public class MainActivity extends AppCompatActivity {
     private Scene scene;
     private boolean isTaking;
     private int count_pic;
+    private int gap = 2;
+
+
+    private Timer timer;
+    private TimerTask timerTask;
 
     private LinkedList<AnchorNode> anchornodes;
 
@@ -88,6 +96,14 @@ public class MainActivity extends AppCompatActivity {
                             toast.show();
                             return null;
                         });*/
+        Timer timer = new Timer();
+        TimerTask timerTask = new TimerTask() {
+            @Override
+            public void run() {
+                count_pic++;
+                takePhoto();
+            }
+        };
 
         anchornodes = new LinkedList<>();
 
@@ -125,21 +141,11 @@ public class MainActivity extends AppCompatActivity {
                 });
 
 
-
-
-
         scene = arFragment.getArSceneView().getScene();
         scene.addOnUpdateListener(new Scene.OnUpdateListener() {
             @Override
             public void onUpdate(FrameTime frameTime) {
                 showTV();
-                if (isTaking){
-                    // 开始拍照，再次点击按钮停止
-                    takePhoto();
-                    // 停止渲染检测到的平面
-                    arFragment.getArSceneView().getPlaneRenderer().setVisible(!isTaking);
-                    count_pic++;
-                }
             }
         });
 
@@ -152,9 +158,27 @@ public class MainActivity extends AppCompatActivity {
         button.setOnClickListener(view -> {
             // takePhoto();
             isTaking = !isTaking;
+            if (isTaking) startTimer();
+            else stopTimer();
+
         });
     }
-    private float calculateDistance(List<AnchorNode> anchorNodes){
+
+    private void startTimer(){
+        timer = new Timer();
+        timerTask = new TimerTask() {
+            @Override
+            public void run() {
+                count_pic++;
+                takePhoto();
+            }
+        };
+        timer.schedule(timerTask,0,1000/gap);
+    }
+    private void stopTimer(){
+        timer.cancel();
+    }
+    private float calculateDistance(List<AnchorNode> anchorNodes) {
         AnchorNode anchorNode_0 = anchorNodes.get(0);
         AnchorNode anchorNode_1 = anchorNodes.get(1);
         float dx = anchorNode_0.getWorldPosition().x - anchorNode_1.getWorldPosition().x;
@@ -164,25 +188,25 @@ public class MainActivity extends AppCompatActivity {
         return result;
     }
 
-    private void showTV(){
+    private void showTV() {
         ArSceneView arSceneView = arFragment.getArSceneView();
         String txt = "";
         int anchorsSize = arSceneView.getSession().getAllAnchors().size();
-        txt += "Anchors size: "+anchorsSize+"\n";
-        if (anchorsSize==2){
+        txt += "Anchors size: " + anchorsSize + "\n";
+        if (anchorsSize == 2) {
             float distance = calculateDistance(anchornodes);
-            txt += "Distance: " + distance+"\n";
-            txt += "Point_0: "+anchornodes.get(0).getAnchor().getPose().toString()+"\n";
-            txt += "Point_1: "+anchornodes.get(1).getAnchor().getPose().toString()+"\n";
+            txt += "Distance: " + distance + "\n";
+            txt += "Point_0: " + anchornodes.get(0).getAnchor().getPose().toString() + "\n";
+            txt += "Point_1: " + anchornodes.get(1).getAnchor().getPose().toString() + "\n";
         }
 
         Camera camera = arFragment.getArSceneView().getArFrame().getCamera();
         String cameraPose = camera.getPose().toString();
         int imageWidth = camera.getImageIntrinsics().getImageDimensions()[0];
         int imageHeight = camera.getImageIntrinsics().getImageDimensions()[1];
-        txt += "CameraPose: "+cameraPose+"\n";
+        txt += "CameraPose: " + cameraPose + "\n";
         // txt += "imageWidth: "+imageWidth+"\t"+"imageHeight: "+imageHeight+"\n";
-        txt += "count: "+ count_pic+"\n";
+        txt += "count: " + count_pic + "\n";
 
 
         tv.setText(txt);
@@ -197,7 +221,7 @@ public class MainActivity extends AppCompatActivity {
 
     private String generateFilenameWithInfo(String info) {
         return Environment.getExternalStoragePublicDirectory(
-                Environment.DIRECTORY_PICTURES) + File.separator + "Sceneform/" + info + "_screenshot.jpg";
+                Environment.DIRECTORY_PICTURES) + File.separator + "Sceneform/" + info + ".jpg";
     }
 
 
@@ -235,8 +259,9 @@ public class MainActivity extends AppCompatActivity {
         float cameraPricipalPoint_cy = camera.getImageIntrinsics().getPrincipalPoint()[1];
         long cameraTimestamp = frame.getTimestamp();
 
-        final String filename = generateFilenameWithInfo(String.valueOf(count_pic));
-
+        final String filename = generateFilenameWithInfo(String.valueOf(count_pic)
+                + "_CameraPose_" + cameraPose);
+        Log.d(TAG, "takePhoto: " + filename);
 
         final Bitmap bitmap = Bitmap.createBitmap(surfaceView.getWidth(), surfaceView.getHeight(), Bitmap.Config.ARGB_8888);
 
@@ -291,8 +316,6 @@ public class MainActivity extends AppCompatActivity {
                         }
                 );
     }
-
-
 
 
     /**
