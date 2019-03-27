@@ -233,7 +233,7 @@ public class MainActivity extends AppCompatActivity {
         }
         try (FileOutputStream outputStream = new FileOutputStream(filename);
              ByteArrayOutputStream outputData = new ByteArrayOutputStream()) {
-            bitmap.compress(Bitmap.CompressFormat.PNG, 100, outputData);
+            bitmap.compress(Bitmap.CompressFormat.PNG, 50, outputData);
             outputData.writeTo(outputStream);
             outputStream.flush();
             outputStream.close();
