@@ -96,15 +96,6 @@ public class MainActivity extends AppCompatActivity {
                             toast.show();
                             return null;
                         });*/
-        Timer timer = new Timer();
-        TimerTask timerTask = new TimerTask() {
-            @Override
-            public void run() {
-                count_pic++;
-                takePhoto();
-            }
-        };
-
         anchornodes = new LinkedList<>();
 
         arFragment.setOnTapArPlaneListener(
@@ -164,20 +155,24 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    private void startTimer(){
+    private void startTimer() {
         timer = new Timer();
         timerTask = new TimerTask() {
             @Override
             public void run() {
                 count_pic++;
-                takePhoto();
+                if (anchornodes.size() == 1) {
+                    takePhoto();
+                }
             }
         };
-        timer.schedule(timerTask,0,1000/gap);
+        timer.schedule(timerTask, 0, 1000 / gap);
     }
-    private void stopTimer(){
+
+    private void stopTimer() {
         timer.cancel();
     }
+
     private float calculateDistance(List<AnchorNode> anchorNodes) {
         AnchorNode anchorNode_0 = anchorNodes.get(0);
         AnchorNode anchorNode_1 = anchorNodes.get(1);
@@ -242,7 +237,6 @@ public class MainActivity extends AppCompatActivity {
             throw new IOException("Failed to save bitmap to disk", ex);
         }
     }
-
     private void takePhoto() {
         // final String filename = generateFilename();
 
@@ -251,17 +245,62 @@ public class MainActivity extends AppCompatActivity {
         Frame frame = surfaceView.getArFrame();
         Camera camera = frame.getCamera();
 
+        AnchorNode anchorNode0 = anchornodes.get(0);
+        //AnchorNode anchorNode1 = anchornodes.get(1);
+        String M1P = anchorNode0.getAnchor().getPose().toString();
+        //String M2P = anchorNode0.getAnchor().getPose().toString();
+
 
         String cameraPose = camera.getPose().toString();
         int imageWidth = camera.getImageIntrinsics().getImageDimensions()[0];
         int imageHeight = camera.getImageIntrinsics().getImageDimensions()[1];
+        float focalLengthX = camera.getImageIntrinsics().getFocalLength()[0];
+        float focalLengthY = camera.getImageIntrinsics().getFocalLength()[1];
         float cameraPricipalPoint_cx = camera.getImageIntrinsics().getPrincipalPoint()[0];
         float cameraPricipalPoint_cy = camera.getImageIntrinsics().getPrincipalPoint()[1];
+        float cameraImageDimensions_width = camera.getImageIntrinsics().getImageDimensions()[0];
+        float cameraImageDimensions_height = camera.getImageIntrinsics().getImageDimensions()[1];
         long cameraTimestamp = frame.getTimestamp();
 
+        float projectionMatrix[] = new float[16];
+        camera.getProjectionMatrix(projectionMatrix,0,0,100);
+
+        float viewMatrix[] = new float[16];
+        camera.getViewMatrix(viewMatrix,0);
+        String result = "Photo: "+count_pic;
+        result += "\t"+"ProjectionMatrix";
+        for (int i = 0; i < 16; i++) {
+            result += projectionMatrix[i]+" ";
+            if(i/4==0){
+                result += "\t";
+            }
+        }
+        result += "\t"+"viewMatrix";
+        for (int i = 0; i < 16; i++) {
+            result += viewMatrix[i]+" ";
+            if(i/4==0){
+                result += "\t";
+            }
+        }
+        Log.d(TAG, "Matrix: "+result);
+
+
+
+
         final String filename = generateFilenameWithInfo(String.valueOf(count_pic)
-                + "_CameraPose_" + cameraPose);
+                + "_CP_" + cameraPose
+                + "_FLx_" +focalLengthX
+                + "_FLy_" +focalLengthY
+                + "_PPcx_" + cameraPricipalPoint_cx
+                + "_PPcy_" + cameraPricipalPoint_cy
+                + "_ImageWidth_" + cameraImageDimensions_width
+                + "_ImageHeight_" + cameraImageDimensions_height
+                + "_M1P_" + M1P);
         Log.d(TAG, "takePhoto: " + filename);
+
+
+
+
 
         final Bitmap bitmap = Bitmap.createBitmap(surfaceView.getWidth(), surfaceView.getHeight(), Bitmap.Config.ARGB_8888);
 
